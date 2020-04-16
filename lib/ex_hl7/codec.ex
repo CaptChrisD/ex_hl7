@@ -233,32 +233,46 @@ defmodule HL7.Codec do
   end
 
   defp binary_to_datetime!(value) do
-    case value do
-      <<y::binary-size(4), m::binary-size(2), d::binary-size(2), time::binary>> ->
-        year = :erlang.binary_to_integer(y)
-        month = :erlang.binary_to_integer(m)
-        day = :erlang.binary_to_integer(d)
+    ~r/^(?<year>(?:19|20)[0-9]{2})(?:(?<month>1[0-2]|0[1-9])(?:(?<day>3[0-1]|[1-2][0-9]|0[1-9])(?:(?<hour>[0-1][0-9]|2[0-3])(?:(?<minute>[0-5][0-9])(?:(?<second>[0-5][0-9](?:\.[0-9]{1,4})?)?)?)?)?)?)?(?<offset>[+-](?:[0-1][0-9]|2[0-3])[0-5][0-9])?/
+    |> Regex.named_captures(value)
+    |> Enum.filter(fn({_k, v}) -> v != "" end)
+    |> Enum.into(%{})
+    |> map_to_datetime()
+  end
 
-        {hour, min, sec} =
-          case time do
-            <<h::binary-size(2), mm::binary-size(2), s::binary-size(2)>> ->
-              {:erlang.binary_to_integer(h), :erlang.binary_to_integer(mm),
-               :erlang.binary_to_integer(s)}
+  # If offset is present then create DateTime otherwise create NaiveDateTime
+  defp map_to_datetime(%{"offset" => offset} = map) do
+    year = Map.get(map, "year", "")
+    month = Map.get(map, "month", "00")
+    day = Map.get(map, "day", "00")
+    hour = Map.get(map, "hour", "00")
+    min = Map.get(map, "minute", "00")
+    sec = Map.get(map, "second", "00")
+    time_st = Enum.join([hour, min, sec], ":")
 
-            <<h::binary-size(2), mm::binary-size(2)>> ->
-              {:erlang.binary_to_integer(h), :erlang.binary_to_integer(mm), 0}
+    # format as iso8601 string and then convert to DateTime
+    "#{year}-#{month}-#{day}T#{time_st}#{offset}"
+    |> DateTime.from_iso8601()
+    |> case do
+      {:ok, datetime, _} -> datetime
+      {:error, _reason} -> raise ArgumentError, "invalid datetime: #{inspect map}"
+    end
+  end
 
-            _ ->
-              {0, 0, 0}
-          end
-
-        case NaiveDateTime.new(year, month, day, hour, min, sec) do
-          {:ok, datetime} -> datetime
-          {:error, _reason} -> raise ArgumentError, "invalid datetime: #{value}"
-        end
-
-      _ ->
-        raise ArgumentError, "invalid datetime: #{value}"
+  defp map_to_datetime(map) do
+    map =
+      map
+      |> Enum.map(fn({k, v}) -> {k, String.to_integer(v)} end)
+      |> Enum.into(%{})
+    year = Map.get(map, "year")
+    month = Map.get(map, "month", 0)
+    day = Map.get(map, "day", 0)
+    hour = Map.get(map, "hour", 0)
+    min = Map.get(map, "minute", 0)
+    sec = Map.get(map, "second", 0)
+    case NaiveDateTime.new(year, month, day, hour, min, sec) do
+      {:ok, datetime} -> datetime
+      {:error, _reason} -> raise ArgumentError, "invalid datetime: #{inspect map}"
     end
   end
 
@@ -361,6 +375,10 @@ defmodule HL7.Codec do
     format_date(year, month, day)
   end
 
+  def format_date!(%DateTime{year: year, month: month, day: day}) do
+    format_date(year, month, day)
+  end
+
   def format_date!(date) do
     raise ArgumentError, "invalid date: #{inspect(date)}"
   end
@@ -381,6 +399,15 @@ defmodule HL7.Codec do
         second: sec
       }) do
     format_datetime(year, month, day, hour, min, sec)
+  end
+
+  def format_datetime(%DateTime{} = datetime) do
+    datetime
+    |> DateTime.to_iso8601()
+    |> String.replace("-", "")
+    |> String.replace(":", "")
+    |> String.replace("T", "")
+    |> String.replace("Z", "+0000")
   end
 
   def format_datetime(%Date{year: year, month: month, day: day}) do
