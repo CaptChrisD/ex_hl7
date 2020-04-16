@@ -26,7 +26,7 @@ defmodule HL7.Segment.Default.MSH do
     field :version,                              seq: 12, type: :string, len: 8, default: "2.4"
     field :accept_ack_type,                      seq: 15, type: :string, len: 2
     field :app_ack_type,                         seq: 16, type: :string, len: 2
-    field :country_code,                         seq: 17, type: :string, len: 3, default: "ARG"
+    field :country_code,                         seq: 17, type: :string, len: 3
     field :char_set,                             seq: 18, type: :string, len: 10
   end
 end
