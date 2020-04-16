@@ -12,6 +12,7 @@ defmodule HL7.Segment.Default.Builder do
   require HL7.Segment.Default.MSA, as: MSA
   require HL7.Segment.Default.MSH, as: MSH
   require HL7.Segment.Default.NTE, as: NTE
+  require HL7.Segment.Default.NK1, as: NK1
   require HL7.Segment.Default.OBX, as: OBX
   require HL7.Segment.Default.PID, as: PID
   require HL7.Segment.Default.PR1, as: PR1
@@ -38,6 +39,7 @@ defmodule HL7.Segment.Default.Builder do
     MSA.id() => MSA,
     MSH.id() => MSH,
     NTE.id() => NTE,
+    NK1.id() => NK1,
     OBX.id() => OBX,
     PID.id() => PID,
     PR1.id() => PR1,
