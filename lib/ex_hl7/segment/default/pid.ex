@@ -16,5 +16,13 @@ defmodule HL7.Segment.Default.PID do
     field :patient_document_id_type,              seq:  3, rep: 2, type: {CX, :id_type}, len: 2
     field :last_name,                             seq:  5, type: {XPN, :family_name, :surname}, len: 25
     field :first_name,                            seq:  5, type: {XPN, :given_name}, len: 25
+    field :date_of_birth,                         seq:  7, type: :datetime, len: 14
+    field :administrative_sex,                    seq:  8, type: :string, len: 1
+    #FIXME: race data type is CE
+    field :race,                                  seq: 10, type: :string, len: 25
+    #FIXME: species_code is type CWE
+    field :species_code,                          seq: 35, type: :string, len: 25
+    #FIXME: breed_code is type CWE
+    field :breed_code,                            seq: 36, type: :string, len: 25
   end
 end
